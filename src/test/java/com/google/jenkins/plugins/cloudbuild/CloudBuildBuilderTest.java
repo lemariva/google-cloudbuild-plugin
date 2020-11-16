@@ -76,21 +76,24 @@ public class CloudBuildBuilderTest {
         new CloudBuildInput("test-project", new FileCloudBuildRequest("cloudbuild.yaml"));
     input.setSource(new StorageCloudBuildSource("bucket", "object/path/source.tgz"));
     input.setSubstitutionList(new SubstitutionList(Arrays.asList(
-        new Substitution("_MESSAGE", "Hello, World!"),
-        new Substitution("_JOB_NAME", "$JOB_NAME"))));
+                              new Substitution("_MESSAGE", "Hello, World!"),
+                              new Substitution("_JOB_NAME", "$JOB_NAME"))));
+
     project.getBuildersList().add(new CloudBuildBuilder(input));
 
     project = j.configRoundtrip(project);
 
     cloud.onStartBuild((build, req, resp) -> {
       assertEquals(1, build.getSteps().size());
+      
       assertEquals("ubuntu", build.getSteps().get(0).getName());
       assertThat(build.getSteps().get(0).getArgs(),
-          Matchers.contains("echo", "$_MESSAGE", "$_JOB_NAME"));
+                Matchers.contains("echo", "$_MESSAGE", "$_JOB_NAME"));
       assertEquals("Hello, World!", build.getSubstitutions().get("_MESSAGE"));
       assertEquals("test-job", build.getSubstitutions().get("_JOB_NAME"));
       assertEquals("bucket", build.getSource().getStorageSource().getBucket());
       assertEquals("object/path/source.tgz", build.getSource().getStorageSource().getObject());
+      
       return new Operation()
           .setName("build-42")
           .setMetadata(new BuildOperationMetadata()
@@ -102,16 +105,16 @@ public class CloudBuildBuilderTest {
     cloud.onCheckBuild((x, req, resp) -> {
       assertThat(req.getUrl(), containsString("/builds/42"));
       return new Build()
-          .setId("42")
-          .setStatus("SUCCESS")
-          .setLogUrl("https://logurl");
+           .setId("42")
+           .setStatus("SUCCESS")
+           .setLogUrl("https://logurl");
     });
 
     FreeStyleBuild build = j.buildAndAssertSuccess(project);
 
     assertEquals("https://logurl", build.getAction(BuildLogAction.class).getUrlName());
     assertThat(build.getAction(StorageAction.class).getUrlName(),
-        containsString("bucket/object/path"));
+        containsString("bucket/object/path"));    
   }
 
   @Test

@@ -35,6 +35,13 @@ to upload and download files from Google Cloud Storage.  Please refer to the
 [google-storage-plugin instructions](https://wiki.jenkins.io/display/JENKINS/Google+Cloud+Storage+Plugin)
 for more details on its usage.
 
+# Local Build
+```
+export JAVA_HOME=$(realpath /usr/bin/javadoc | sed 's@bin/javadoc$@@')
+mvn clean package -Dmaven.test.skip=true  # test are still not working
+mvn hpi:hpi
+```
+
 
 # Hello world
 

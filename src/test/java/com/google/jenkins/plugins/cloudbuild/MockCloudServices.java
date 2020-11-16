@@ -97,28 +97,26 @@ public class MockCloudServices {
    * @return an {@link Answer} to be provided as a mock to handle the corresponding HTTP requests
    * @see MockHttpTransport#buildRequest(String, String)
    */
-  private <T, R> Answer<MockLowLevelHttpRequest> mockRequest(
-      Class<T> clazz, MockRequestHandler<T, R> handler) {
-    return invocation -> new MockLowLevelHttpRequest(invocation.getArgument(1)) {
-      @Override
-      public LowLevelHttpResponse execute() throws IOException {
-        MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
-        if (!getFirstHeaderValue("authorization").equals("Bearer super-secret-token")) {
-          response.setStatusCode(HttpStatusCodes.STATUS_CODE_UNAUTHORIZED);
+  private <T, R> Answer<MockLowLevelHttpRequest> mockRequest(Class<T> clazz, MockRequestHandler<T, R> handler) {
+      return invocation -> new MockLowLevelHttpRequest(invocation.getArgument(1)) {        
+        @Override
+        public LowLevelHttpResponse execute() throws IOException {
+          MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
+          if (!getFirstHeaderValue("authorization").equals("Bearer super-secret-token")) {
+            response.setStatusCode(HttpStatusCodes.STATUS_CODE_UNAUTHORIZED);
+            return response;
+          }
+          response.setStatusCode(HttpStatusCodes.STATUS_CODE_OK);          
+          T in = null;
+          if (!clazz.equals(Void.class)) {
+            in = json.createJsonParser(getContentAsString()).parse(clazz);
+          }
+          R result = handler.handle(in, this, response);
+          if (result != null) {
+            response.setContent(json.toString(result));
+          }
           return response;
         }
-        response.setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
-
-        T in = null;
-        if (!clazz.equals(Void.class)) {
-          in = json.createJsonParser(getContentAsString()).parse(clazz);
-        }
-        R result = handler.handle(in, this, response);
-        if (result != null) {
-          response.setContent(json.toString(result));
-        }
-        return response;
-      }
     };
   }
 
@@ -129,6 +127,7 @@ public class MockCloudServices {
    * @throws IOException if an error occurs while setting up the mock
    */
   public void onStartBuild(MockRequestHandler<Build, Operation> handler) throws IOException {
+
     when(transport.buildRequest(eq(HttpMethods.POST), contains("/v1/projects/test-project/builds")))
         .thenAnswer(mockRequest(Build.class, handler));
   }

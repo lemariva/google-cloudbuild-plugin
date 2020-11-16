@@ -7,3 +7,4 @@ target/
 
 # Jenkins home directory when running "mvn hpi:run".
 work/
+.surefire*

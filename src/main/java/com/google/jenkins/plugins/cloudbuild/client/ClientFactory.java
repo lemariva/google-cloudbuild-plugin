@@ -15,6 +15,7 @@ package com.google.jenkins.plugins.cloudbuild.client;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.io.PrintStream;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -42,6 +43,7 @@ public class ClientFactory {
   private final JsonFactory jsonFactory;
   private final GoogleRobotCredentials credentials;
   private final HttpRequestInitializer gcred;
+  private final PrintStream logger;
 
   public ClientFactory(Run<?, ?> run, TaskListener listener, String credentialsId)
       throws IOException {
@@ -50,6 +52,7 @@ public class ClientFactory {
     }
     this.run = run;
     this.listener = listener;
+    this.logger = listener.getLogger();
 
     try {
       this.transport = getDefaultTransport();
@@ -62,6 +65,10 @@ public class ClientFactory {
     CloudBuildScopeRequirement requirement = new CloudBuildScopeRequirement();
     this.credentials = CredentialsProvider.findCredentialById(
         credentialsId, GoogleRobotCredentials.class, run, requirement);
+    
+    logger.println("credentials: " + this.credentials.getProjectId());
+    logger.println("credentials: " + this.credentials.getId());
+
     if (credentials == null) {
       throw new AbortException(Messages.ClientFactory_FailedToRetrieveCredentials(credentialsId));
     }
